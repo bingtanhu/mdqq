@@ -29,6 +29,7 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.applyModuleTheme
 import de.robv.android.xposed.XposedBridge
 import me.padi.nbhook.R
+import me.padi.nbhook.api.GuildApi
 import me.padi.nbhook.library.FloatingActionButton.FloatingActionButton
 import me.padi.nbhook.library.FloatingActionButton.FloatingActionMenu
 import me.padi.nbhook.util.HybridClassLoader
@@ -173,6 +174,7 @@ object MainHook : YukiBaseHooker() {
                 }.hook {
                     after {
                         sQQAppInterface = instance
+
                     }
                 }
 
@@ -371,6 +373,7 @@ object MainHook : YukiBaseHooker() {
                             val parent =
                                 LayoutInflater.from(tabLayout.context.applyModuleTheme(R.style.Theme_AppDefault))
                                     .inflate(R.layout.material_tab, null)
+
                             tabLayout.post {
                                 val rootView = (tabLayout.parent as ViewGroup)
                                 val homeTabViewTag = "home_tab_view"
@@ -385,6 +388,7 @@ object MainHook : YukiBaseHooker() {
                                 val tab2 = parent.findViewById<LinearLayout>(R.id.tab2)
                                 val tab3 = parent.findViewById<LinearLayout>(R.id.tab3)
                                 val tab4 = parent.findViewById<LinearLayout>(R.id.tab4)
+                                if (!GuildApi.isShowGuildTab()) tab4.visibility = View.GONE
                                 val tabs = listOf(tab1, tab2, tab3, tab4)
                                 val text1 = tab1.findViewById<TextView>(R.id.tab1_text)
                                 val text2 = tab2.findViewById<TextView>(R.id.tab2_text)
