@@ -8,7 +8,7 @@
 
 ![Gitea Stars](https://img.shields.io/github/stars/paditianxiu/mdqq?style=flat)
 ![GitHub top language](https://img.shields.io/github/languages/top/paditianxiu/mdqq)
-[![群](https://img.shields.io/badge/%E4%BC%81%E9%B9%85%E7%BE%A4-1073473158-ff69b4)](https://qm.qq.com/q/UfgR6JT3GM)
+[![群](https://img.shields.io/badge/%E4%BC%81%E9%B9%85%E7%BE%A4-630563733-ff69b4)](https://qm.qq.com/q/UfgR6JT3GM)
 </div>
 
 ## 🧩 项目图片
