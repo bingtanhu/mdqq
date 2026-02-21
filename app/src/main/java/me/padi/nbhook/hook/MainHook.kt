@@ -12,23 +12,11 @@ import android.graphics.Outline
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.SystemClock
-import android.transition.ChangeBounds
-import android.transition.Fade
-import android.transition.Transition
-import android.transition.TransitionManager
-import android.transition.TransitionSet
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.transition.*
+import android.view.*
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.view.ViewOutlineProvider
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -39,11 +27,14 @@ import com.highcapable.kavaref.KavaRef.Companion.asResolver
 import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.applyModuleTheme
+import de.robv.android.xposed.XposedBridge
 import me.padi.nbhook.R
 import me.padi.nbhook.library.FloatingActionButton.FloatingActionButton
 import me.padi.nbhook.library.FloatingActionButton.FloatingActionMenu
+import me.padi.nbhook.util.HybridClassLoader
 import top.sacz.xphelper.XpHelper
 import top.sacz.xphelper.dexkit.DexFinder
+import java.lang.reflect.Field
 import kotlin.math.roundToInt
 
 object MainHook : YukiBaseHooker() {
@@ -59,8 +50,8 @@ object MainHook : YukiBaseHooker() {
                 val appContext = instance<Context>()
                 XpHelper.initContext(appContext)
                 val loader = appContext.classLoader
-
-
+                HybridClassLoader.hostClassLoader = loader
+                injectClassLoader()
                 "com.tencent.biz.qui.noticebar.view.VQUINoticeBarLayout".toClass(loader).resolve()
                     .firstConstructor {}.hook {
                         after {
@@ -688,6 +679,22 @@ object MainHook : YukiBaseHooker() {
 
         rootView.addView(button)
     }
+
+    @SuppressLint("DiscouragedPrivateApi")
+    @Throws(Exception::class)
+    private fun injectClassLoader() {
+        val fParent: Field = ClassLoader::class.java.getDeclaredField("parent")
+        fParent.isAccessible = true
+        val mine = MainHook::class.java.classLoader
+        var curr: ClassLoader? = fParent.get(mine) as ClassLoader
+        if (curr == null) {
+            curr = XposedBridge::class.java.classLoader
+        }
+        if (curr!!.javaClass.name != HybridClassLoader::class.java.getName()) {
+            HybridClassLoader.setLoaderParentClassLoader(curr)
+            fParent.set(mine, HybridClassLoader.INSTANCE)
+        }
+    }
 }
 
 fun Context.startUri(uri: String) {
@@ -705,3 +712,4 @@ fun Context.dp2px(dp: Int): Int {
     val scale = this.getResources().getDisplayMetrics().density
     return (dp * scale).roundToInt()
 }
+

@@ -30,4 +30,4 @@ gropify {
 
 rootProject.name = "MDQQ"
 
-include(":app")
+include(":app", ":libs:qqstub")
