@@ -1,3 +1,4 @@
+
 [submodule "libs/qqstub"]
 	path = libs/qqstub
-	url = https://github.com/LuckyPray/qq-stub.git
+	url = https://github.com/dartcv/qq-stub
