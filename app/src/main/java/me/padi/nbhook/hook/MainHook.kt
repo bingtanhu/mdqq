@@ -61,38 +61,6 @@ object MainHook : YukiBaseHooker() {
                 val loader = appContext.classLoader
 
 
-//                "com.tencent.mobileqq.widget.search.QUISearchBar".toClass(loader).resolve()
-//                    .firstMethod {
-//                        name = "initView"
-//                    }.hook {
-//                        after {
-//                            val view = instance<ViewGroup>()
-//                            val context = view.context
-//                            view.post {
-//                                val barParams = view.layoutParams
-//                                barParams.height = context.dp2px(500)
-//                                view.layoutParams = barParams
-//                                view.setBackgroundColor(0xFF000000.toInt())
-//                                view.asResolver().firstMethod {
-//                                    name = "setMaxHeight"
-//                                    superclass()
-//                                }.invoke(
-//                                    Integer.MAX_VALUE
-//                                )
-//
-//                                view.asResolver().firstMethod {
-//                                    name = "setMinHeight"
-//                                    superclass()
-//                                }.invoke(
-//                                    0
-//                                )
-//
-//
-//                            }
-//                        }
-//                    }
-
-
                 "com.tencent.biz.qui.noticebar.view.VQUINoticeBarLayout".toClass(loader).resolve()
                     .firstConstructor {}.hook {
                         after {
@@ -151,7 +119,9 @@ object MainHook : YukiBaseHooker() {
 
                                 (recyclerView.parent as ViewGroup).setBackgroundResource(R.drawable.bg)
                                 recyclerView.outlineProvider = object : ViewOutlineProvider() {
-                                    override fun getOutline(view: View, outline: Outline) {
+                                    override fun getOutline(
+                                        view: View, outline: Outline
+                                    ) {
                                         outline.setRoundRect(
                                             0, 0, view.width, view.height, radius.toFloat()
                                         )
@@ -171,9 +141,6 @@ object MainHook : YukiBaseHooker() {
                             }
                         }
                     }
-
-
-
 
 
 
@@ -222,8 +189,9 @@ object MainHook : YukiBaseHooker() {
                 @SuppressLint("InternalInsetResource")
                 fun getStatusBarHeight(context: Context): Int {
                     var result = 0
-                    val resourceId =
-                        context.resources.getIdentifier("status_bar_height", "dimen", "android")
+                    val resourceId = context.resources.getIdentifier(
+                        "status_bar_height", "dimen", "android"
+                    )
                     if (resourceId > 0) {
                         result = context.resources.getDimensionPixelSize(resourceId)
                     }
@@ -321,7 +289,9 @@ object MainHook : YukiBaseHooker() {
                                                     "preAct_elapsedRealtime",
                                                     SystemClock.elapsedRealtime()
                                                 )
-                                                putLong("preAct_time", System.currentTimeMillis())
+                                                putLong(
+                                                    "preAct_time", System.currentTimeMillis()
+                                                )
 
                                                 // 其他参数
                                                 putInt("fling_code_key", 150083179)
@@ -650,7 +620,9 @@ object MainHook : YukiBaseHooker() {
 
                                 putBoolean("preload_process", true)
                                 putString("preAct", "SplashActivity")
-                                putLong("preAct_elapsedRealtime", SystemClock.elapsedRealtime())
+                                putLong(
+                                    "preAct_elapsedRealtime", SystemClock.elapsedRealtime()
+                                )
                                 putInt("fling_code_key", 193393859)
                                 putString("from", "Conversation")
                                 putLong("preAct_time", System.currentTimeMillis())
@@ -673,7 +645,9 @@ object MainHook : YukiBaseHooker() {
                                 putInt("EntranceId", 4)
                                 putString("preAct", "SplashActivity")
                                 putBoolean("newEntrance", false)
-                                putLong("preAct_elapsedRealtime", SystemClock.elapsedRealtime())
+                                putLong(
+                                    "preAct_elapsedRealtime", SystemClock.elapsedRealtime()
+                                )
                                 putLong("preAct_time", System.currentTimeMillis())
                                 putInt("fling_code_key", 193393859)
                             })
