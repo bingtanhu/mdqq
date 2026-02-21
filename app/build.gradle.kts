@@ -86,11 +86,13 @@ dependencies {
 
     implementation(libs.material)
 
+    compileOnly(project(":libs:qqstub"))
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
 
-    implementation("com.github.suzhelan:XpHelper:3.0")
+    implementation(libs.xphelper)
 
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 }
