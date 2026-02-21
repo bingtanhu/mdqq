@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./images/icon.png" width="160" height="160" style="display: block; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-radius: 20%;" alt="icon" />
+<img src="images/mdqq.png" width="160" height="160" style="display: block; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-radius: 20%;" alt="icon" />
 
 # MaterialDesignQQ
 
