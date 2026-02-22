@@ -1,5 +1,6 @@
 package me.padi.nbhook.library.FloatingActionButton;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -18,8 +19,9 @@ import android.view.View;
 import android.view.ViewOutlineProvider;
 import android.view.animation.Animation;
 import android.widget.TextView;
+import kotlin.Suppress;
 
-
+@SuppressLint({"AppCompatCustomView"})
 public class Label extends TextView {
 
     private static final Xfermode PORTER_DUFF_CLEAR = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
