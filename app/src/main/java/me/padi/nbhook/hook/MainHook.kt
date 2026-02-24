@@ -6,13 +6,17 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Outline
+import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.Gravity
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -26,7 +30,9 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
-import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.highcapable.kavaref.KavaRef.Companion.asResolver
 import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.yukihookapi.hook.factory.applyModuleTheme
@@ -35,9 +41,9 @@ import me.padi.nbhook.hook.base.Plugin
 import me.padi.nbhook.library.FloatingActionButton.FloatingActionButton
 import me.padi.nbhook.library.FloatingActionButton.FloatingActionMenu
 import me.padi.nbhook.util.dp2px
+import me.padi.nbhook.util.getResourceId
 import me.padi.nbhook.util.startUri
 import top.sacz.xphelper.dexkit.DexFinder
-import kotlin.math.roundToInt
 
 
 @Deprecated(message = "弃用，暂时仍然生效，后续将剩下的Hook细分开")
@@ -47,8 +53,7 @@ object MainHook : Plugin(isEnabledDefault = true) {
     override fun onHook() {
 
         DexFinder.findMethod {
-            declaredClass =
-                "com.tencent.mobileqq.parts.QQSettingMeCoverPartV3".toClass(loader)
+            declaredClass = "com.tencent.mobileqq.parts.QQSettingMeCoverPartV3".toClass(loader)
             parameters = arrayOf(Boolean::class.java)
             usingNumbers = longArrayOf(0, 8)
         }.firstOrNull().hook().intercept()
@@ -87,12 +92,13 @@ object MainHook : Plugin(isEnabledDefault = true) {
                     val recyclerView = instance<View>()
                     recyclerView.post {
                         val context = recyclerView.context
-                        val layoutParams = recyclerView.layoutParams
-                        if (layoutParams is ViewGroup.MarginLayoutParams) {
+
+                        val params = recyclerView.layoutParams
+                        if (params is ViewGroup.MarginLayoutParams) {
                             val marginTopPx = context.dp2px(250)
-                            layoutParams.topMargin = marginTopPx
-                            layoutParams.bottomMargin = context.dp2px(100)
-                            recyclerView.layoutParams = layoutParams
+                            params.topMargin = marginTopPx
+                            params.bottomMargin = context.dp2px(100)
+                            recyclerView.layoutParams = params
                         }
 
 
@@ -111,7 +117,6 @@ object MainHook : Plugin(isEnabledDefault = true) {
                         }
                         recyclerView.background = gradientDrawable
 
-                        (recyclerView.parent as ViewGroup).setBackgroundResource(R.drawable.bg)
                         recyclerView.outlineProvider = object : ViewOutlineProvider() {
                             override fun getOutline(
                                 view: View, outline: Outline
@@ -126,9 +131,82 @@ object MainHook : Plugin(isEnabledDefault = true) {
                         (recyclerView.parent as ViewGroup).clipChildren = true
 
                         recyclerView.postDelayed({
+
+                            val parent = recyclerView.parent as ViewGroup
+                            val activity = parent.context as Activity
+                            activity.findViewById<View>(
+                                context.getResourceId(
+                                    "u23", "id"
+                                )
+                            ).visibility = View.GONE
+
                             recyclerView.setPadding(
                                 0, context.dp2px(1), 0, context.dp2px(100)
                             )
+
+                            val root = activity.findViewById<FrameLayout>(0x1020002)
+
+                            val container = FrameLayout(activity).apply {
+                                layoutParams = FrameLayout.LayoutParams(
+                                    MATCH_PARENT,
+                                    MATCH_PARENT
+                                )
+                                setBackgroundColor(0xFFFFFFFF.toInt())
+                            }
+
+                            val surfaceView = SurfaceView(activity).apply {
+                                holder.setFormat(PixelFormat.RGBA_8888)
+                                layoutParams = FrameLayout.LayoutParams(
+                                    MATCH_PARENT,
+                                    MATCH_PARENT,
+                                    Gravity.CENTER
+                                )
+                            }
+
+                            container.addView(surfaceView)
+                            root.addView(container, 0)
+
+                            var exoPlayer: ExoPlayer? = null
+
+                            surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
+
+                                override fun surfaceCreated(holder: SurfaceHolder) {
+
+                                    exoPlayer = ExoPlayer.Builder(activity)
+                                        .setHandleAudioBecomingNoisy(true)
+                                        .build().apply {
+
+                                            setVideoSurface(holder.surface)
+
+                                            val mediaItem = MediaItem.fromUri(
+                                                "https://jxh.karpov.cn/public/video2.mp4"
+                                            )
+
+                                            setMediaItem(mediaItem)
+                                            repeatMode = Player.REPEAT_MODE_ALL
+                                            playWhenReady = true
+
+                                            prepare()
+                                        }
+                                }
+
+                                override fun surfaceDestroyed(holder: SurfaceHolder) {
+                                    exoPlayer?.run {
+                                        clearVideoSurface()
+                                        release()
+                                    }
+                                    exoPlayer = null
+                                }
+
+                                override fun surfaceChanged(
+                                    holder: SurfaceHolder,
+                                    format: Int,
+                                    width: Int,
+                                    height: Int
+                                ) {}
+                            })
+
+
                         }, 100)
 
 
@@ -151,178 +229,172 @@ object MainHook : Plugin(isEnabledDefault = true) {
             return result
         }
 
-        "com.tencent.mobileqq.activity.home.Conversation".toClass(loader).resolve()
-            .firstMethod {
-                name = "initUI"
-            }.hook {
-                after {
-                    instance.asResolver().firstField {
-                        name = "mTitleArea"
-                    }.get<ViewGroup>()?.apply {
-                        removeAllViews()
-                        val statusBarHeight = getStatusBarHeight(context)
+        "com.tencent.mobileqq.activity.home.Conversation".toClass(loader).resolve().firstMethod {
+            name = "initUI"
+        }.hook {
+            after {
+                instance.asResolver().firstField {
+                    name = "mTitleArea"
+                }.get<ViewGroup>()?.apply {
+                    removeAllViews()
+                    val statusBarHeight = getStatusBarHeight(context)
 
-                        val rootContainer = FrameLayout(context).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                MATCH_PARENT, MATCH_PARENT
-                            )
-                            setBackgroundColor("#5A91FF".toColorInt())
-                            setPadding(0, statusBarHeight, 0, 0)
+                    val rootContainer = FrameLayout(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            MATCH_PARENT, MATCH_PARENT
+                        )
+                        setBackgroundColor("#5A91FF".toColorInt())
+                        setPadding(0, statusBarHeight, 0, 0)
+                    }
+
+                    val titleText = TextView(context).apply {
+                        text = "消息"
+                        gravity = Gravity.CENTER
+                        textSize = 16f
+                        setTextColor(Color.WHITE)
+                    }
+                    rootContainer.addView(
+                        titleText, FrameLayout.LayoutParams(
+                            WRAP_CONTENT, WRAP_CONTENT, Gravity.CENTER
+                        )
+                    )
+
+                    val rightIconContainer = LinearLayout(context).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        layoutParams = FrameLayout.LayoutParams(
+                            WRAP_CONTENT, WRAP_CONTENT, Gravity.END or Gravity.CENTER_VERTICAL
+                        ).apply {
+                            rightMargin = context.dp2px(16)
+                        }
+                    }
+
+                    val settingsIcon = AppCompatImageView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            context.dp2px(24), context.dp2px(24)
+                        ).apply {
+                            leftMargin = context.dp2px(16)
                         }
 
-                        val titleText = TextView(context).apply {
-                            text = "消息"
-                            gravity = Gravity.CENTER
-                            textSize = 16f
-                            setTextColor(Color.WHITE)
+                        setImageResource(R.drawable.baseline_settings_24)
+
+                        scaleType = ImageView.ScaleType.CENTER_INSIDE
+
+                        setOnClickListener {
+                            val intent = Intent().apply {
+                                component = ComponentName(
+                                    "com.tencent.mobileqq",
+                                    "com.tencent.mobileqq.activity.QPublicFragmentActivity"
+                                )
+                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                putExtra("fling_action_key", 2)
+                                putExtra("preAct", "SplashActivity")
+                                putExtra("leftViewText", "返回")
+                                putExtra(
+                                    "preAct_elapsedRealtime", SystemClock.elapsedRealtime()
+                                )
+                                putExtra("preAct_time", System.currentTimeMillis())
+                                putExtra(
+                                    "public_fragment_class",
+                                    "com.tencent.mobileqq.setting.main.MainSettingFragment"
+                                )
+                            }
+                            context.startActivity(intent)
                         }
-                        rootContainer.addView(
-                            titleText, FrameLayout.LayoutParams(
-                                WRAP_CONTENT, WRAP_CONTENT, Gravity.CENTER
-                            )
+
+                        setColorFilter(Color.WHITE)
+                    }
+
+                    val searchIcon = AppCompatImageView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            context.dp2px(24), context.dp2px(24)
                         )
 
-                        val rightIconContainer = LinearLayout(context).apply {
-                            orientation = LinearLayout.HORIZONTAL
-                            layoutParams = FrameLayout.LayoutParams(
-                                WRAP_CONTENT,
-                                WRAP_CONTENT,
-                                Gravity.END or Gravity.CENTER_VERTICAL
-                            ).apply {
-                                rightMargin = context.dp2px(16)
+                        setImageResource(R.drawable.baseline_search_24)
+
+                        scaleType = ImageView.ScaleType.CENTER_INSIDE
+
+
+                        setOnClickListener {
+                            val intent = Intent().apply {
+                                setClassName(
+                                    "com.tencent.mobileqq",
+                                    "com.tencent.mobileqq.search.activity.UniteSearchActivity"
+                                )
+                                putExtras(Bundle().apply {
+                                    putStringArrayList(
+                                        "home_hint_words", ArrayList(emptyList())
+                                    )
+
+                                    putInt("fling_action_key", 2)
+                                    putInt("fromType", 1)
+                                    putInt("source", 1)
+                                    putString("preAct", "SplashActivity")
+                                    putString("leftViewText", "消息")
+
+                                    putLong(
+                                        "preAct_elapsedRealtime", SystemClock.elapsedRealtime()
+                                    )
+                                    putLong(
+                                        "preAct_time", System.currentTimeMillis()
+                                    )
+
+                                    // 其他参数
+                                    putInt("fling_code_key", 150083179)
+                                    putString("keyword", null)
+                                    putString("home_hot_word", null)
+                                    putString("home_gif_info", null)
+                                })
                             }
+                            context.startActivity(intent)
                         }
 
-                        val settingsIcon = AppCompatImageView(context).apply {
-                            layoutParams = LinearLayout.LayoutParams(
-                                context.dp2px(24), context.dp2px(24)
-                            ).apply {
-                                leftMargin = context.dp2px(16)
-                            }
-
-                            setImageResource(R.drawable.baseline_settings_24)
-
-                            scaleType = ImageView.ScaleType.CENTER_INSIDE
-
-                            setOnClickListener {
-                                val intent = Intent().apply {
-                                    component = ComponentName(
-                                        "com.tencent.mobileqq",
-                                        "com.tencent.mobileqq.activity.QPublicFragmentActivity"
-                                    )
-                                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                    putExtra("fling_action_key", 2)
-                                    putExtra("preAct", "SplashActivity")
-                                    putExtra("leftViewText", "返回")
-                                    putExtra("preAct_elapsedRealtime", SystemClock.elapsedRealtime())
-                                    putExtra("preAct_time", System.currentTimeMillis())
-                                    putExtra(
-                                        "public_fragment_class",
-                                        "com.tencent.mobileqq.setting.main.MainSettingFragment"
-                                    )
-                                }
-                                context.startActivity(intent)
-                            }
-
-                            setColorFilter(Color.WHITE)
-                        }
-
-                        val searchIcon = AppCompatImageView(context).apply {
-                            layoutParams = LinearLayout.LayoutParams(
-                                context.dp2px(24), context.dp2px(24)
-                            )
-
-                            setImageResource(R.drawable.baseline_search_24)
-
-                            scaleType = ImageView.ScaleType.CENTER_INSIDE
-
-
-                            setOnClickListener {
-                                val intent = Intent().apply {
-                                    setClassName(
-                                        "com.tencent.mobileqq",
-                                        "com.tencent.mobileqq.search.activity.UniteSearchActivity"
-                                    )
-                                    putExtras(Bundle().apply {
-                                        putStringArrayList(
-                                            "home_hint_words", ArrayList(emptyList())
-                                        )
-
-                                        putInt("fling_action_key", 2)
-                                        putInt("fromType", 1)
-                                        putInt("source", 1)
-                                        putString("preAct", "SplashActivity")
-                                        putString("leftViewText", "消息")
-
-                                        putLong(
-                                            "preAct_elapsedRealtime",
-                                            SystemClock.elapsedRealtime()
-                                        )
-                                        putLong(
-                                            "preAct_time", System.currentTimeMillis()
-                                        )
-
-                                        // 其他参数
-                                        putInt("fling_code_key", 150083179)
-                                        putString("keyword", null)
-                                        putString("home_hot_word", null)
-                                        putString("home_gif_info", null)
-                                    })
-                                }
-                                context.startActivity(intent)
-                            }
-
-                            setColorFilter(Color.WHITE)
-                        }
-
-
-                        rightIconContainer.addView(searchIcon)
-                        rightIconContainer.addView(settingsIcon)
-
-
-                        rootContainer.addView(rightIconContainer)
-
-                        addView(
-                            rootContainer,
-                            ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                        )
+                        setColorFilter(Color.WHITE)
                     }
+
+
+                    rightIconContainer.addView(searchIcon)
+                    rightIconContainer.addView(settingsIcon)
+
+
+                    rootContainer.addView(rightIconContainer)
+
+                    addView(
+                        rootContainer, ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                    )
                 }
             }
+        }
 
 
 
 
-        "com.tencent.mobileqq.activity.home.Conversation".toClass(loader).resolve()
-            .firstMethod {
-                name = "initUI"
-            }.hook {
-                after {
-                    instance.asResolver().firstField {
-                        name = "mRootView"
-                    }.get<ViewGroup>()?.apply {
-                        addButtonToScreen(this.context as Activity, this)
-                    }
+        "com.tencent.mobileqq.activity.home.Conversation".toClass(loader).resolve().firstMethod {
+            name = "initUI"
+        }.hook {
+            after {
+                instance.asResolver().firstField {
+                    name = "mRootView"
+                }.get<ViewGroup>()?.apply {
+                    addButtonToScreen(this.context as Activity, this)
                 }
             }
+        }
 
 
-        "com.tencent.mobileqq.activity.home.Conversation".toClass(loader).resolve()
-            .firstMethod {
-                name = "initOnlineStatusContent"
-            }.hook().intercept()
+        "com.tencent.mobileqq.activity.home.Conversation".toClass(loader).resolve().firstMethod {
+            name = "initOnlineStatusContent"
+        }.hook().intercept()
 
 
-        "com.tencent.qui.quiblurview.QQBlurViewWrapper".toClass(loader).resolve()
-            .firstMethod {
-                name = "onDestroy"
-            }.hook {
-                after {
-                    val view = instance<View>()
-                    val parent = view.parent as? ViewGroup
-                    parent?.removeView(view)
-                }
+        "com.tencent.qui.quiblurview.QQBlurViewWrapper".toClass(loader).resolve().firstMethod {
+            name = "onDestroy"
+        }.hook {
+            after {
+                val view = instance<View>()
+                val parent = view.parent as? ViewGroup
+                parent?.removeView(view)
             }
+        }
 
 
         DexFinder.findMethod {

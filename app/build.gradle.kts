@@ -61,6 +61,7 @@ tasks.withType<KotlinJvmCompile>().configureEach {
 
 dependencies {
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.media3.exoplayer)
     compileOnly(libs.rovo89.xposed.api)
     ksp(libs.yukihookapi.ksp.xposed)
     implementation(libs.yukihookapi)

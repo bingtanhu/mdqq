@@ -27,6 +27,7 @@ androidx-test-junit = "1.3.0"
 androidx-test-espresso-core = "3.7.0"
 xphelper = "3.0"
 ui = "1.10.3"
+media3-exoplayer = "1.9.2"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -59,3 +60,4 @@ androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidx-test-espresso-core" }
 xphelper = { group = "com.github.suzhelan", name = "XpHelper", version.ref = "xphelper" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3-exoplayer" }
