@@ -28,3 +28,4 @@ git clone https://github.com/paditianxiu/mdqq.git
 ```bash
 git submodule update --init --recursive
 ```
+：
